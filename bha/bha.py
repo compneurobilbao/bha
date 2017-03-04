@@ -89,16 +89,7 @@ def cumgauss(x, mu, sigma):
 
     The cumulative Gaussian function is defined as:
 
-    .. math::
-
-        \\Phi(x) = \\frac{1}{2} [1 + erf(\\frac{x}{\\sqrt{2}})]
-
-    Where, $erf$, the error function is defined as:
-
-    .. math::
-
-        erf(x) = \\frac{1}{\\sqrt{\\pi}} \int_{-x}^{x} e^{t^2} dt
-
+    
     """
     return 0.5 * (1 + erf((x - mu) / (np.sqrt(2) * sigma)))
 
