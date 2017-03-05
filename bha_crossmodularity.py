@@ -53,7 +53,10 @@ def crossmodularity (A,B,alpha,beta,T):
     
     #Compute the cross modularity
     X = np.power ((np.multiply(np.multiply (Qa,Qb),L)), 1/3)
-    
+
+    return X, Qa, Qb, L
+
+
 def modularity_index (A,T):
 #A newman spectral algorithm adapted from the brain connectivity toolbox. 
 #Original code in here  https://sites.google.com/site/bctnet/measures/list 
@@ -71,8 +74,4 @@ def modularity_index (A,T):
     s =  T [:, np.ones((1,N))]                        #compute modularity
     Q = np.not_equal (np.multiply ((s - np.transpose (s)), B) / m) 
     Q = np.sum (Q)
-    
-
-
-
-    
+    return Q
