@@ -18,18 +18,16 @@ def fetch_bha_data():
     -------
     None :
     """
-    if os.path.exists(data_path):
-        print('\nDataset found in {}\n'.format(data_path))
+    file_path = os.path.join(data_path, 'average_networks.npz')
+    if os.path.exists(file_path):
+        print('\nDataset found in {}\n'.format(file_path))
     else:
-        temp1 = tempfile.mkdtemp()
         # download zip
-        url = '' # we need to upload data to somewhere
+        url = 'https://ndownloader.figshare.com/files/7716100'
+        # we need to upload data to somewhere
         (path, _) = urllib.request.urlretrieve(url)
         # unzip
-        with zipfile.ZipFile(path, "r") as z:
-            z.extractall(temp1, [x for x in z.namelist()])
         # create subjects folder
         # copy the data to subjects folder
-        shutil.copytree(temp1, data_path)
-        shutil.rmtree(temp1)
+        shutil.copy(path, data_path + '/average_networks.npz')
     return
