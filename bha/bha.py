@@ -1,202 +1,159 @@
 from __future__ import absolute_import, division, print_function
+import os
 import numpy as np
-import pandas as pd
-import scipy.optimize as opt
-from scipy.special import erf
-from .due import due, Doi
+import bha
 
-__all__ = ["Model", "Fit", "opt_err_func", "transform_data", "cumgauss"]
-
-
-# Use duecredit (duecredit.org) to provide a citation to relevant work to
-# be cited. This does nothing, unless the user has duecredit installed,
-# And calls this with duecredit (as in `python -m duecredit script.py`):
-due.cite(Doi("10.1167/13.9.30"),
-         description="Template project for small scientific Python projects",
-         tags=["reference-implementation"],
-         path='bha')
+data_path = os.path.join(bha.__path__[0], 'data')
+#from .due import due, Doi
+#
+#
+## Use duecredit (duecredit.org) to provide a citation to relevant work to
+## be cited. This does nothing, unless the user has duecredit installed,
+## And calls this with duecredit (as in `python -m duecredit script.py`):
+#due.cite(Doi("10.1038/srep10532"),
+#         description="A novel brain partition highlights the modular skeleton shared by structure and function.",
+#         tags=["reference-implementation"],
+#         path='bha')
 
 
-def transform_data(data):
+def crossmodularity(A, B, alpha, beta, T):
     """
-    Function that takes experimental data and gives us the
-    dependent/independent variables for analysis
-
-    Parameters
-    ----------
-    data : Pandas DataFrame or string.
-        If this is a DataFrame, it should have the columns `contrast1` and
-        `answer` from which the dependent and independent variables will be
-        extracted. If this is a string, it should be the full path to a csv
-        file that contains data that can be read into a DataFrame with this
-        specification.
-
-    Returns
-    -------
-    x : array
-        The unique contrast differences.
-    y : array
-        The proportion of '2' answers in each contrast difference
-    n : array
-        The number of trials in each x,y condition
-    """
-    if isinstance(data, str):
-        data = pd.read_csv(data)
-
-    contrast1 = data['contrast1']
-    answers = data['answer']
-
-    x = np.unique(contrast1)
-    y = []
-    n = []
-
-    for c in x:
-        idx = np.where(contrast1 == c)
-        n.append(float(len(idx[0])))
-        answer1 = len(np.where(answers[idx[0]] == 1)[0])
-        y.append(answer1 / n[-1])
-    return x, y, n
-
-
-def cumgauss(x, mu, sigma):
-    """
-    The cumulative Gaussian at x, for the distribution with mean mu and
-    standard deviation sigma.
-
-    Parameters
-    ----------
-    x : float or array
-       The values of x over which to evaluate the cumulative Gaussian function
-
-    mu : float
-       The mean parameter. Determines the x value at which the y value is 0.5
-
-    sigma : float
-       The variance parameter. Determines the slope of the curve at the point
-       of Deflection
-
-    Returns
-    -------
-
-    g : float or array
-        The cumulative gaussian with mean $\\mu$ and variance $\\sigma$
-        evaluated at all points in `x`.
-
-    Notes
-    -----
-    Based on:
-    http://en.wikipedia.org/wiki/Normal_distribution#Cumulative_distribution_function
-
-    The cumulative Gaussian function is defined as:
-
+    Given two input (symmetrical) matrices A and B, this function
+    calculates the crossmodularity index X
     
-    """
-    return 0.5 * (1 + erf((x - mu) / (np.sqrt(2) * sigma)))
-
-
-def opt_err_func(params, x, y, func):
-    """
-    Error function for fitting a function using non-linear optimization
-
     Parameters
     ----------
-    params : tuple
-        A tuple with the parameters of `func` according to their order of
-        input
-
-    x : float array
-        An independent variable.
-
-    y : float array
-        The dependent variable.
-
-    func : function
-        A function with inputs: `(x, *params)`
-
+    A : array
+        squared matrice of N*N (typically connectivity matrices), being N the number of ROIs
+    B : array
+        squared matrice of N*N (typically connectivity matrices), being N the number of ROIs
+    alpha : float
+        artibitrary thersholds to binarize the two  matrices (necessary for the similarity calculation)
+    beta : float
+        artibitrary thersholds to binarize the two  matrices (necessary for the similarity calculation)
+    T : array
+        label vector: each element vector is defined as an integer corresponding to the module that ROI belongs to
+    
     Returns
     -------
-    float array
-        The marginals of the fit to x/y given the params
+    X : float
+        crossmodularity
+    Qa : array
+        modularities of inA associatted to partition T
+    Qb : array
+        modularities of inB associatted to partition T
+    L: float
+        similarity between A and B
+
     """
-    return y - func(x, *params)
+    # Get the different labels of the modules
+    labels = np.unique(T)
+
+    # For each module compute sorensen index
+    sorensen = np.zeros(len(labels))
+    indx_m = np.empty(0)
+    for m in labels:
+        # Select the rois of each module and binarizes the resulting matrices using alpha and betha
+        indx_m = np.array(np.where(T == labels[m]))
+        indx = np.ix_(indx_m[0], indx_m[0])
+        bin_A = A[indx] > alpha
+        bin_B = B[indx] > beta
+        bin_A = bin_A.astype(int)
+        bin_B = bin_B.astype(int)
+        sorensen[m] = np.sum(2*(np.multiply(bin_A, bin_B))) / (np.sum(bin_A) + np.sum(bin_B))
+    # The total similarity is the mean similarity of all the modules
+    L = np.mean(sorensen)
+
+    # Compute the modularity index
+    Qa = modularity_index(np.absolute(A), T)
+    Qb = modularity_index(np.absolute(B), T)
+
+    # Compute the cross modularity
+    X = np.power((np.multiply(np.multiply(Qa, Qb), L)), 1/3)
+
+    return X, Qa, Qb, L
 
 
-class Model(object):
-    """ Class for fitting cumulative Gaussian functions to data"""
-    def __init__(self, func=cumgauss):
-        """ Initialize a model object
-
-        Parameters
-        ----------
-        data : Pandas DataFrame
-            Data from a subjective contrast judgement experiment
-
-        func : callable, optional
-            A function that relates x and y through a set of parameters.
-            Default: :func:`cumgauss`
-        """
-        self.func = func
-
-    def fit(self, x, y, initial=[0.5, 1]):
-        """
-        Fit a Model to data
-
-        Parameters
-        ----------
-        x : float or array
-           The independent variable: contrast values presented in the
-           experiment
-        y : float or array
-           The dependent variable
-
-        Returns
-        -------
-        fit : :class:`Fit` instance
-            A :class:`Fit` object that contains the parameters of the model.
-
-        """
-        params, _ = opt.leastsq(opt_err_func, initial,
-                                args=(x, y, self.func))
-        return Fit(self, params)
-
-
-class Fit(object):
+def modularity_index(A, T):
     """
-    Class for representing a fit of a model to data
+    A newman spectral algorithm adapted from the brain connectivity toolbox. 
+    Original code:  https://sites.google.com/site/bctnet/measures/list 
+    
+    Parameters
+    ----------
+    A : array
+        squared matrice of N*N (typically connectivity matrices), being N the number of ROIs
+    T : array
+        label vector: each element vector is defined as an integer corresponding to the module that ROI belongs to
+    
+    Returns
+    -------
+    Q : float
+        modularity index
+     """
+    
+    N = np.amax(np.shape(A))  # number of vertices
+    K = np.sum(A, axis = 0, keepdims=True )  # degree
+    
+    m = np.sum(K)  # number of edges (each undirected edge is counted twice)
+    B = A - np.divide(K.T.dot(K), m)  # modularity matrix
+    
+    if T.shape[0] == 1:
+        T= T.T
+
+    s = np.array([T,]*N).T #  compute modularity
+    zero_idx = np.where((s - s.T)==0)
+    others_idx = np.where((s - s.T)!=0)
+
+    s[zero_idx] = 1
+    s[others_idx] = 0
+    
+    Q = (s * B) / m
+    Q = np.sum(Q)
+
+    return Q
+
+
+if __name__ == "__main__":
+
+    from bha.utils import fetch_bha_data
+    from scipy import spatial, cluster
+
+    if not os.path.exists(os.path.join(data_path, 'average_networks.npz')):
+        fetch_bha_data()
+
+    data = np.load('bha/data/average_networks.npz')
+    struct_network = data.f.struct_network
+    func_network = data.f.func_network
+
+    # These parameters are based on the reference paper
+    num_clusters = 20
+    alpha = 0.45
+    beta = 0.0
+    struct_network = struct_network / np.max(struct_network)
+
     """
-    def __init__(self, model, params):
-        """
-        Initialize a :class:`Fit` object
+    Functional dendogram -> structure follows function
+    """
 
-        Parameters
-        ----------
-        model : a :class:`Model` instance
-            An object representing the model used
+    Y = spatial.distance.pdist(func_network, metric='cosine')
+    Z = cluster.hierarchy.linkage(Y, method='weighted')
+    T = cluster.hierarchy.cut_tree(Z, n_clusters=num_clusters)
 
-        params : array or list
-            The parameters of the model evaluated for the data
+    Xsf, Qff, Qsf, Lsf = crossmodularity(func_network, struct_network,
+                                         alpha, beta, T[:, 0])
 
-        """
-        self.model = model
-        self.params = params
+    """
+    Structural dendogram  ->  function follows structure
 
-    def predict(self, x):
-        """
-        Predict values of the dependent variable based on values of the
-        indpendent variable.
-
-        Parameters
-        ----------
-        x : float or array
-            Values of the independent variable. Can be values presented in
-            the experiment. For out-of-sample prediction (e.g. in
-            cross-validation), these can be values
-            that were not presented in the experiment.
-
-        Returns
-        -------
-        y : float or array
-            Predicted values of the dependent variable, corresponding to
-            values of the independent variable.
-        """
-        return self.model.func(x, *self.params)
+    X=1-struct_network
+    Y = zeros(1,size(X,1)*(size(X,1)-1)/2)
+    idxEnd=0
+    for i=1:size(X,1)-1
+        Y(idxEnd+1:idxEnd+length(X(i,i+1:end)))=X(i,i+1:end)
+        idxEnd=idxEnd+length(X(i,i+1:end))
+    end
+    Z = linkage(Y,'average')
+    H,T,permAll = dendrogram(Z,num_clusters,'colorthreshold',1000)
+    Xfs Qfs Qss Lfs =crossmodularity(func_network,struct_network,alpha,beta,T)
+    """
