@@ -1,5 +1,8 @@
 ## bha
 [![Build Status](https://travis-ci.org/compneurobilbao/bha.svg?branch=master)](https://travis-ci.org/compneurobilbao/bha)
+[![Documentation Status](https://readthedocs.org/projects/bha/badge/?version=latest)](http://bha.readthedocs.io/en/latest/?badge=latest)
+[![Coverage Status](https://coveralls.io/repos/github/compneurobilbao/bha/badge.svg?branch=master)](https://coveralls.io/github/compneurobilbao/bha?branch=master)
+[![Code Issues](https://www.quantifiedcode.com/api/v1/project/6cb19fbeb8e34770a6238dd245cf6011/badge.svg)](https://www.quantifiedcode.com/app/project/6cb19fbeb8e34770a6238dd245cf6011)
 
 Shablona is a template project for small scientific python projects. The
 recommendations we make here follow the standards and conventions of much of
