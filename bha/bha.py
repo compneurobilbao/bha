@@ -16,7 +16,7 @@ data_path = os.path.join(bha.__path__[0], 'data')
 #         path='bha')
 
 
-def crossmodularity(A, B, alpha, beta, T):
+def cross_modularity(A, B, alpha, beta, T):
     """
     Given two input (symmetrical) matrices A and B, this function
     calculates the crossmodularity index X
@@ -140,8 +140,8 @@ if __name__ == "__main__":
     Z = cluster.hierarchy.linkage(Y, method='weighted')
     T = cluster.hierarchy.cut_tree(Z, n_clusters=num_clusters)
 
-    Xsf, Qff, Qsf, Lsf = crossmodularity(func_network, struct_network,
-                                         alpha, beta, T[:, 0])
+    Xsf, Qff, Qsf, Lsf = cross_modularity(func_network, struct_network,
+                                          alpha, beta, T[:, 0])
 
     """
     Structural dendogram  ->  function follows structure
