@@ -22,7 +22,7 @@ def test_cross_modularity():
     if not op.exists(op.join(data_path, 'average_networks.npz')):
         fetch_bha_data()
 
-    data = np.load('bha/data/average_networks.npz')
+    data = np.load(op.join(data_path, 'average_networks.npz'))
     struct_network = data.f.struct_network
     func_network = data.f.func_network
 
@@ -55,7 +55,7 @@ def test_modularity_index():
     if not op.exists(op.join(data_path, 'average_networks.npz')):
         fetch_bha_data()
 
-    data = np.load('bha/data/average_networks.npz')
+    data = np.load(op.join(data_path, 'average_networks.npz'))
     struct_network = data.f.struct_network
     func_network = data.f.func_network
 
