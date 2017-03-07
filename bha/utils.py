@@ -1,6 +1,7 @@
 from __future__ import absolute_import, division, print_function
 import os
-import zipfile, tempfile, urllib, shutil
+import shutil
+import urllib.request as req
 import bha
 
 data_path = os.path.join(bha.__path__[0], 'data')
@@ -25,7 +26,7 @@ def fetch_bha_data():
         # download zip
         url = 'https://ndownloader.figshare.com/files/7716100'
         # we need to upload data to somewhere
-        (path, _) = urllib.request.urlretrieve(url)
+        (path, _) = req.urlretrieve(url)
         # unzip
         # create subjects folder
         # copy the data to subjects folder
