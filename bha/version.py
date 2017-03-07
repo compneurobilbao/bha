@@ -61,4 +61,4 @@ MINOR = _version_minor
 MICRO = _version_micro
 VERSION = __version__
 PACKAGE_DATA = {'bha': [pjoin('data', '*')]}
-REQUIRES = ["numpy", "pandas"]
+REQUIRES = ["numpy", "scipy"]
