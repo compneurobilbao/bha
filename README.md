@@ -1,5 +1,5 @@
 ## bha
-[![Build Status](https://travis-ci.org/uwescience/bha.svg?branch=master)](https://travis-ci.org/uwescience/bha)
+[![Build Status](https://travis-ci.org/compneurobilbao/bha.svg?branch=master)](https://travis-ci.org/compneurobilbao/bha)
 
 Shablona is a template project for small scientific python projects. The
 recommendations we make here follow the standards and conventions of much of
