@@ -1,5 +1,4 @@
 *.pyc
 *~
-*.npz
 .cache
 .cache/*
